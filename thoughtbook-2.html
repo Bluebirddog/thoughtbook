@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thoughtbook</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1814;
+    --paper: #ece8f8;
+    --warm: #ddd8f0;
+    --fade: #9a90a8;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--warm);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  header h1 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  header .date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--fade);
+  }
+
+  .topics-strip {
+    border-bottom: 1px solid var(--warm);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .topics-strip::-webkit-scrollbar { display: none; }
+  .topics-inner {
+    display: flex;
+    align-items: stretch;
+    padding: 0 0.75rem;
+    min-width: max-content;
+  }
+  .topic-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 0.8rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    color: var(--fade);
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .topic-pill:hover { color: var(--ink); }
+  .topic-pill.active { color: var(--ink); border-bottom-color: var(--tc, var(--ink)); }
+  .topic-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .topic-count { font-family: 'DM Mono', monospace; font-size: 0.58rem; color: var(--fade); }
+  .strip-btn {
+    padding: 0.7rem 0.8rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--fade);
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .strip-btn:hover { color: var(--ink); }
+  .topic-edit { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 0.4rem 0.3rem 0.4rem 0; cursor: pointer; font-size: 0.7rem; color: var(--fade); transition: color 0.15s; line-height: 1; }
+  .topic-edit:hover { color: var(--ink); }
+
+  .capture-area {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--warm);
+  }
+  .capture-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
+  .capture-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fade);
+  }
+  .topic-select {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    border: 1px solid var(--warm);
+    background: var(--paper);
+    color: var(--ink);
+    padding: 0.25rem 0.5rem;
+    outline: none;
+    cursor: pointer;
+    max-width: 130px;
+  }
+  .capture-input {
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--warm);
+    padding: 0.4rem 0 0.5rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    line-height: 1.65;
+    min-height: 55px;
+  }
+  .capture-input::placeholder { color: var(--fade); font-style: italic; }
+  .capture-bottom { display: flex; justify-content: flex-end; margin-top: 0.75rem; }
+  .drop-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 0.55rem 1.4rem;
+    cursor: pointer;
+  }
+  .drop-btn:hover { opacity: 0.75; }
+
+  .search-area {
+    display: none;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--warm);
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .search-area.on { display: flex; }
+  .search-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fade);
+    flex-shrink: 0;
+  }
+  .search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    outline: none;
+  }
+  .search-input::placeholder { color: var(--fade); font-style: italic; }
+  .search-close { background: none; border: none; font-size: 0.85rem; color: var(--fade); cursor: pointer; }
+
+  .entries-section { padding: 1.25rem 1.5rem 3rem; }
+  .entries-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .entries-title { font-size: 1.5rem; font-weight: 300; font-style: italic; }
+  .entries-meta { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--fade); }
+
+  .entry { padding: 0.9rem 0; border-bottom: 1px solid var(--warm); animation: fu 0.2s ease; }
+  @keyframes fu { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+  .entry-main { display: flex; gap: 0.7rem; align-items: flex-start; }
+  .entry-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 0.52rem; flex-shrink: 0; }
+  .entry-text { font-size: 1rem; line-height: 1.65; flex: 1; }
+  .entry-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.3rem;
+    padding-left: 1.3rem;
+  }
+  .entry-meta { display: flex; gap: 0.6rem; align-items: center; }
+  .entry-time { font-family: 'DM Mono', monospace; font-size: 0.57rem; color: var(--fade); }
+  .entry-tlabel { font-family: 'DM Mono', monospace; font-size: 0.57rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .entry-actions { display: flex; gap: 0.4rem; align-items: center; }
+  .entry-move {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.57rem;
+    border: 1px solid var(--warm);
+    background: var(--paper);
+    color: var(--fade);
+    padding: 0.15rem 0.35rem;
+    cursor: pointer;
+    outline: none;
+  }
+  .entry-del { background: none; border: none; font-size: 0.7rem; color: var(--fade); cursor: pointer; padding: 0.1rem 0.25rem; }
+  .entry-del:hover { color: #c42a2a; }
+
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--fade); font-style: italic; }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,24,20,0.4);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .modal-overlay.on { display: flex; }
+  .modal { background: var(--paper); padding: 1.75rem; width: 100%; max-width: 300px; border: 1px solid var(--warm); }
+  .modal-title { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fade); margin-bottom: 1rem; }
+  .modal input {
+    width: 100%;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    border: none;
+    border-bottom: 1px solid var(--ink);
+    background: none;
+    padding: 0.3rem 0 0.4rem;
+    outline: none;
+    color: var(--ink);
+    margin-bottom: 1.4rem;
+  }
+  .modal-btns { display: flex; gap: 0.75rem; justify-content: flex-end; }
+  .btn-cancel { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; background: none; border: 1px solid var(--warm); padding: 0.4rem 0.85rem; cursor: pointer; color: var(--fade); }
+  .btn-save { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; background: var(--ink); border: none; padding: 0.4rem 0.85rem; cursor: pointer; color: var(--paper); }
+
+  @media (min-width: 700px) {
+    header, .capture-area, .entries-section, .search-area { padding-left: 2.5rem; padding-right: 2.5rem; }
+    .topics-inner { padding: 0 1.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Thoughtbook</h1>
+  <span class="date" id="hDate"></span>
+</header>
+
+<div class="topics-strip">
+  <div class="topics-inner" id="tInner"></div>
+</div>
+
+<div class="capture-area">
+  <div class="capture-top">
+    <span class="capture-label">dropping into <span id="cTarget" style="font-weight:400">—</span></span>
+    <select class="topic-select" id="tSel" onchange="onSel()"></select>
+  </div>
+  <textarea class="capture-input" id="cInput" placeholder="drop a thought here…" rows="3"></textarea>
+  <div class="capture-bottom">
+    <button class="drop-btn" onclick="addEntry()">Drop</button>
+  </div>
+</div>
+
+<div class="search-area" id="sArea">
+  <span class="search-label">Search</span>
+  <input class="search-input" id="sInput" placeholder="search all thoughts…" oninput="renderE()">
+  <button class="search-close" onclick="goAll()">✕</button>
+</div>
+
+<div class="entries-section">
+  <div class="entries-header">
+    <span class="entries-title" id="eTitle">All entries</span>
+    <span class="entries-meta" id="eMeta"></span>
+  </div>
+  <div id="eList"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Name this topic</div>
+    <input type="text" id="mInput" placeholder="Topic name…" maxlength="100">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeM()">Cancel</button>
+      <button class="btn-save" onclick="saveM()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#e8458a','#2a8fc4','#8b35c4','#3aaa6e','#c42a6e','#7b2ac4','#e0802a','#2ac4b0','#c44020','#2a5cc4','#6aaa2a','#c42a9a'];
+
+function load() {
+  try {
+    return {
+      topics: JSON.parse(localStorage.getItem('th2_t') || 'null') || [
+        {id:'t1',name:'Topic 1',color:COLORS[0]},
+        {id:'t2',name:'Topic 2',color:COLORS[1]},
+        {id:'t3',name:'Topic 3',color:COLORS[2]},
+        {id:'t4',name:'Topic 4',color:COLORS[3]},
+        {id:'t5',name:'Topic 5',color:COLORS[4]},
+        {id:'t6',name:'Topic 6',color:COLORS[5]},
+      ],
+      entries: JSON.parse(localStorage.getItem('th2_e') || '[]'),
+      view: 'all',
+      active: null,
+      mFor: null
+    };
+  } catch(e) {
+    return {topics:[],entries:[],view:'all',active:null,mFor:null};
+  }
+}
+
+let S = load();
+
+function persist() {
+  try {
+    localStorage.setItem('th2_t', JSON.stringify(S.topics));
+    localStorage.setItem('th2_e', JSON.stringify(S.entries));
+  } catch(e) {}
+}
+
+function getTopic(id) { return S.topics.find(t => t.id === id) || null; }
+
+function renderT() {
+  const inner = document.getElementById('tInner');
+  const allOn = S.view === 'all';
+  let html = `<button class="topic-pill${allOn?' active':''}" onclick="goAll()">All</button>`;
+  html += S.topics.map(t => {
+    const cnt = S.entries.filter(e => e.tid === t.id).length;
+    const on = S.view === 'topic' && S.active === t.id;
+    return `<span style="display:inline-flex;align-items:stretch;margin-bottom:-1px;"><button class="topic-pill${on?' active':''}" style="--tc:${t.color}" onclick="goTopic('${t.id}')"><span class="topic-dot" style="background:${t.color}"></span>${t.name}${cnt?`<span class="topic-count">${cnt}</span>`:''}</button><button class="topic-edit" onclick="openM('${t.id}')" title="Rename">✎</button></span>`;
+  }).join('');
+  html += `<button class="strip-btn" onclick="addTopic()">+ topic</button>`;
+  html += `<button class="strip-btn" onclick="goSearch()">search</button>`;
+  inner.innerHTML = html;
+}
+
+function renderSel() {
+  const sel = document.getElementById('tSel');
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">unassigned</option>` + S.topics.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  if (prev && getTopic(prev)) sel.value = prev;
+  updateLabel();
+}
+
+function onSel() { updateLabel(); }
+
+function updateLabel() {
+  const v = document.getElementById('tSel').value;
+  const el = document.getElementById('cTarget');
+  const t = getTopic(v);
+  el.textContent = t ? t.name : 'unassigned';
+  el.style.color = t ? t.color : '';
+}
+
+function goAll() {
+  S.view = 'all'; S.active = null;
+  document.getElementById('sArea').classList.remove('on');
+  renderT(); renderE();
+}
+
+function goTopic(id) {
+  S.view = 'topic'; S.active = id;
+  document.getElementById('sArea').classList.remove('on');
+  document.getElementById('tSel').value = id;
+  updateLabel();
+  renderT(); renderE();
+}
+
+function goSearch() {
+  S.view = 'search';
+  document.getElementById('sArea').classList.add('on');
+  document.getElementById('sInput').value = '';
+  document.getElementById('sInput').focus();
+  renderT(); renderE();
+}
+
+function addEntry() {
+  const inp = document.getElementById('cInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  const tid = document.getElementById('tSel').value || null;
+  S.entries.unshift({id:'e'+Date.now(), text, tid, ts: new Date().toISOString()});
+  persist(); inp.value = '';
+  renderT(); renderE();
+}
+
+function delEntry(id) {
+  S.entries = S.entries.filter(e => e.id !== id);
+  persist(); renderT(); renderE();
+}
+
+function moveE(id, tid) {
+  const e = S.entries.find(e => e.id === id);
+  if (e) { e.tid = tid || null; persist(); renderT(); renderE(); }
+}
+
+function fmt(iso) {
+  const d = new Date(iso), now = new Date(), diff = now - d;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderE() {
+  const list = document.getElementById('eList');
+  const title = document.getElementById('eTitle');
+  const meta = document.getElementById('eMeta');
+  let entries = [...S.entries];
+
+  if (S.view === 'topic') {
+    entries = entries.filter(e => e.tid === S.active);
+    const t = getTopic(S.active);
+    title.textContent = t ? t.name : '';
+    title.style.color = t ? t.color : '';
+  } else if (S.view === 'search') {
+    const q = document.getElementById('sInput').value.trim().toLowerCase();
+    entries = q ? entries.filter(e => e.text.toLowerCase().includes(q)) : [];
+    title.textContent = 'Search';
+    title.style.color = '';
+  } else {
+    title.textContent = 'All entries';
+    title.style.color = '';
+  }
+
+  meta.textContent = entries.length ? entries.length + (entries.length === 1 ? ' thought' : ' thoughts') : '';
+
+  if (!entries.length) {
+    list.innerHTML = `<div class="empty">${S.view==='search'?'type to search':'nothing here yet'}</div>`;
+    return;
+  }
+
+  const opts = S.topics.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  list.innerHTML = entries.map(e => {
+    const t = e.tid ? getTopic(e.tid) : null;
+    const color = t ? t.color : 'var(--fade)';
+    return `<div class="entry">
+      <div class="entry-main">
+        <span class="entry-dot" style="background:${color}"></span>
+        <span class="entry-text">${esc(e.text).replace(/\n/g,'<br>')}</span>
+      </div>
+      <div class="entry-footer">
+        <div class="entry-meta">
+          <span class="entry-time">${fmt(e.ts)}</span>
+          ${t?`<span class="entry-tlabel" style="color:${color}">${t.name}</span>`:''}
+        </div>
+        <div class="entry-actions">
+          <select class="entry-move" onchange="moveE('${e.id}',this.value)">
+            <option value="">move…</option>${opts}
+          </select>
+          <button class="entry-del" onclick="delEntry('${e.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addTopic() {
+  const id = 't' + Date.now();
+  S.topics.push({id, name:'New topic', color: COLORS[S.topics.length % COLORS.length]});
+  persist(); renderT(); renderSel(); openM(id);
+}
+
+function openM(id) {
+  S.mFor = id;
+  const t = getTopic(id);
+  document.getElementById('mInput').value = t ? t.name : '';
+  document.getElementById('modal').classList.add('on');
+  setTimeout(() => { const i = document.getElementById('mInput'); i.focus(); i.select(); }, 50);
+}
+
+function closeM() {
+  document.getElementById('modal').classList.remove('on');
+  S.mFor = null;
+}
+
+function saveM() {
+  const name = document.getElementById('mInput').value.trim();
+  if (!name) { closeM(); return; }
+  const t = getTopic(S.mFor);
+  if (t) { t.name = name; persist(); }
+  closeM(); renderT(); renderSel(); renderE();
+}
+
+document.getElementById('hDate').textContent =
+  new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+
+document.getElementById('cInput').addEventListener('keydown', ev => {
+  if ((ev.metaKey||ev.ctrlKey) && ev.key==='Enter') { ev.preventDefault(); addEntry(); }
+});
+document.getElementById('mInput').addEventListener('keydown', ev => {
+  if (ev.key==='Enter') saveM();
+  if (ev.key==='Escape') closeM();
+});
+document.getElementById('modal').addEventListener('click', ev => {
+  if (ev.target===document.getElementById('modal')) closeM();
+});
+
+renderT(); renderSel(); renderE();
+</script>
+</body>
+</html>
